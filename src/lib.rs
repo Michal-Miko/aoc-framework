@@ -24,6 +24,9 @@ pub fn check_solved_tasks(
             println!("✔ {} passed the example test!", task.name());
         }
 
+        let solution_output = task.solve()?;
+        println!("· Solution attempt:\n{}", solution_output.join("\n"));
+
         for phase in 1..=phases_per_task {
             let solved = task.ask_if_solved(phase)?;
             if !solved {
