@@ -10,10 +10,10 @@ pub fn check_solved_tasks(
     tasks: Vec<BoxedAocTask>,
     phases_per_task: usize,
 ) -> Result<bool, AocError> {
-    for task in tasks {
+    for (i, task) in tasks.iter().enumerate() {
         let example_test_result = task.run_example_test()?;
         if !example_test_result.passed {
-            println!("❌ {} failed the example test.", task.name());
+            println!("✘ {} failed the example test.", task.name());
             println!(
                 "Expected output:\n{:#?}",
                 example_test_result.expected_output
@@ -31,19 +31,20 @@ pub fn check_solved_tasks(
             let solved = task.ask_if_solved(phase)?;
             if !solved {
                 println!(
-                    "❌ Phase {phase}/{phases_per_task} of {} failed.",
+                    "✘ Phase {phase}/{phases_per_task} of {} failed.",
                     task.name()
                 );
                 return Ok(false);
             } else {
                 println!(
-                    "✔️ Phase {phase}/{phases_per_task} of {} solved!",
+                    "✔ Phase {phase}/{phases_per_task} of {} solved!",
                     task.name()
                 );
             }
         }
 
-        println!("✔️ Task {} done!", task.name());
+        println!("✔ Task {} - {}/{} done!", task.name(), i + 1, tasks.len());
+        println!("=================================================");
     }
 
     println!("🚀🚀🚀✔️ All tasks have been completed! ✔️🚀🚀🚀");
