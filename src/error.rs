@@ -1,9 +1,8 @@
-use std::fmt::Display;
-
+use std::error::Error;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum AocError<E: Display> {
+pub enum AocError {
     #[error(
         "Failed to mark the task {task_name} as solved by creating the solved file: {solved_path}"
     )]
@@ -24,7 +23,10 @@ pub enum AocError<E: Display> {
         expected_output: String,
     },
     #[error("Your solution returned an error: {source}")]
-    SolutionExecutionError { input: String, source: E },
+    SolutionExecutionError {
+        input: String,
+        source: Box<dyn Error + Send + Sync>,
+    },
     #[error("Failed to get user input")]
     UserInterractionError { source: std::io::Error },
 }
