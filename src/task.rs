@@ -9,9 +9,9 @@ use dialoguer::Confirm;
 
 use crate::error::AocError;
 
-type AocSolution = Vec<String>;
-type AocIO = Lines<BufReader<File>>;
-type AocInput = AocIO;
+pub type AocSolution = Vec<String>;
+pub type AocIO = Lines<BufReader<File>>;
+pub type AocInput = AocIO;
 
 pub trait AocTask<E: Display> {
     fn directory() -> PathBuf;
