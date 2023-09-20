@@ -28,16 +28,3 @@ pub enum AocError<E: Display> {
     #[error("Failed to get user input")]
     UserInterractionError { source: std::io::Error },
 }
-
-// pub enum GitlabError {
-//     #[error("Your GitLab Access Token is invalid: [{status}] {message}\nRun jit reset-gitlab to change it.")]
-//     InvalidAccessToken { status: StatusCode, message: String },
-//     #[error("Deserialization error")]
-//     DeserializationError(#[from] serde_json::Error),
-//     #[error("Request error")]
-//     RequestError(#[from] reqwest::Error),
-//     #[error("GitLab Api error: {status} - {message}")]
-//     GitlabApiError { status: StatusCode, message: String },
-//     #[error("Failed to resolve the remote repository path from current directory")]
-//     InvalidRemoteError,
-// }
