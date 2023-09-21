@@ -76,7 +76,11 @@ pub trait AocTask {
         Ok(())
     }
 
-    fn solution(&self, input: AocInput) -> Result<AocSolution, Box<dyn Error + Send + Sync>>;
+    fn solution(
+        &self,
+        input: AocInput,
+        phase: usize,
+    ) -> Result<AocSolution, Box<dyn Error + Send + Sync>>;
 
     fn get_file_iterator(&self, path: PathBuf) -> Result<AocIO, AocError> {
         let file = File::open(&path).map_err(|io_err| AocError::IOReadError {
@@ -95,20 +99,24 @@ pub trait AocTask {
             })
     }
 
-    fn solve_from_input_path(&self, input_path: PathBuf) -> Result<AocSolution, AocError> {
+    fn solve_from_input_path(
+        &self,
+        input_path: PathBuf,
+        phase: usize,
+    ) -> Result<AocSolution, AocError> {
         let input = self.get_file_iterator(input_path.clone())?;
-        let output = self
-            .solution(input)
-            .map_err(|err| AocError::SolutionExecutionError {
-                input: input_path.to_string_lossy().to_string(),
-                source: err,
-            })?;
+        let output =
+            self.solution(input, phase)
+                .map_err(|err| AocError::SolutionExecutionError {
+                    input: input_path.to_string_lossy().to_string(),
+                    source: err,
+                })?;
         Ok(output)
     }
 
-    fn solve(&self) -> Result<AocSolution, AocError> {
+    fn solve(&self, phase: usize) -> Result<AocSolution, AocError> {
         let input_path = self.input_path();
-        let output = self.solve_from_input_path(input_path)?;
+        let output = self.solve_from_input_path(input_path, phase)?;
         Ok(output)
     }
 
@@ -122,9 +130,9 @@ pub trait AocTask {
         matches == s1.len() && matches == s2.len()
     }
 
-    fn run_example_test(&self) -> Result<AocTestResult, AocError> {
+    fn run_example_test(&self, phase: usize) -> Result<AocTestResult, AocError> {
         let example_output = self.get_example_output()?;
-        let output = self.solve_from_input_path(self.example_input_path())?;
+        let output = self.solve_from_input_path(self.example_input_path(), phase)?;
         Ok(AocTestResult {
             passed: self.solutions_match(&example_output, &output),
             output,
@@ -133,10 +141,6 @@ pub trait AocTask {
     }
 
     fn ask_if_solved(&self, phase: usize) -> Result<bool, AocError> {
-        if self.phase_is_solved(phase) {
-            return Ok(true);
-        }
-
         let solved = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!("Is phase {phase} of the task solved?"))
             .interact()
@@ -162,7 +166,11 @@ mod tests {
             PathBuf::from("tests/sum_task")
         }
 
-        fn solution(&self, input: AocInput) -> Result<AocSolution, Box<dyn Error + Send + Sync>> {
+        fn solution(
+            &self,
+            input: AocInput,
+            _phase: usize,
+        ) -> Result<AocSolution, Box<dyn Error + Send + Sync>> {
             let mut answers = vec![];
             for line in input {
                 if let Ok(string) = line {
@@ -188,13 +196,13 @@ mod tests {
     #[test]
     fn sum_task_example_solution() {
         let task = SumTask;
-        assert!(task.run_example_test().unwrap().passed)
+        assert!(task.run_example_test(1).unwrap().passed)
     }
 
     #[test]
     fn sum_task_solution() {
         let task = SumTask;
-        let solution = task.solve().unwrap();
+        let solution = task.solve(1).unwrap();
         let expected_output = vec![7.to_string(), 12.to_string(), 289197.to_string()];
         assert!(task.solutions_match(&solution, &expected_output))
     }
