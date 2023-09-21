@@ -1,52 +1,125 @@
 pub mod error;
 mod task;
 
+use crossterm::style::Stylize;
+use itertools::Itertools;
+use prettydiff::diff_chars;
+use std::fmt::Display;
+
 use error::AocError;
 pub use task::{AocIO, AocInput, AocSolution, AocTask};
 
 pub type BoxedAocTask = Box<dyn AocTask>;
+
+const CROSS: &str = "✘";
+const CHECKMARK: &str = "✔";
+const DOT: &str = "·";
 
 pub fn check_solved_tasks(
     tasks: Vec<BoxedAocTask>,
     phases_per_task: usize,
 ) -> Result<bool, AocError> {
     for (i, task) in tasks.iter().enumerate() {
-        let example_test_result = task.run_example_test()?;
+        let example_test_result = task.run_example_test(1)?;
         if !example_test_result.passed {
-            println!("✘ {} failed the example test.", task.name());
             println!(
-                "Expected output:\n{:#?}",
-                example_test_result.expected_output
+                "{} {} {} the example test.",
+                CROSS.dark_red(),
+                task.name().bold(),
+                "failed".dark_red()
             );
-            println!("Solution output:\n{:#?}", example_test_result.output);
+            let result = example_test_result.output.into_iter();
+            let expected = example_test_result.expected_output.into_iter();
+
+            println!("Diff:");
+            for lines in result.zip_longest(expected) {
+                let (res_line, exp_line) = match lines {
+                    itertools::EitherOrBoth::Both(r, e) => (r, e),
+                    itertools::EitherOrBoth::Left(r) => (r, Default::default()),
+                    itertools::EitherOrBoth::Right(e) => (Default::default(), e),
+                };
+                println!("{}", diff_chars(&res_line, &exp_line));
+            }
+
             return Ok(false);
         } else {
-            println!("✔ {} passed the example test!", task.name());
+            println!(
+                "{} {} {} the example test!",
+                CHECKMARK.dark_green(),
+                task.name().bold(),
+                "passed".dark_green()
+            );
         }
 
-        let solution_output = task.solve()?;
-        println!("· Solution attempt:\n{}", solution_output.join("\n"));
-
         for phase in 1..=phases_per_task {
-            let solved = task.ask_if_solved(phase)?;
+            let mut solved = task.phase_is_solved(phase);
+            if !solved {
+                let solution_output = task.solve(phase)?;
+                println!(
+                    "{} {} {}\n{}",
+                    DOT.blue(),
+                    "Output for phase".blue(),
+                    phase.to_string().dark_yellow(),
+                    solution_output.join("\n").blue()
+                );
+                solved = task.ask_if_solved(phase)?;
+            }
+
             if !solved {
                 println!(
-                    "✘ Phase {phase}/{phases_per_task} of {} failed.",
-                    task.name()
+                    "{} Phase {}/{} of {} {}.",
+                    CROSS.dark_red(),
+                    phase.to_string().dark_yellow(),
+                    phases_per_task.to_string().dark_yellow(),
+                    task.name().bold(),
+                    "failed".dark_red()
                 );
                 return Ok(false);
             } else {
                 println!(
-                    "✔ Phase {phase}/{phases_per_task} of {} solved!",
-                    task.name()
+                    "{} Phase {}/{} of {} {}!",
+                    CHECKMARK.dark_green(),
+                    phase.to_string().dark_yellow(),
+                    phases_per_task.to_string().dark_yellow(),
+                    task.name().bold(),
+                    "passed".dark_green()
                 );
             }
         }
 
-        println!("✔ Task {} - {}/{} done!", task.name(), i + 1, tasks.len());
+        println!(
+            "{}",
+            format!(
+                "{} Task {} - {}/{} done!",
+                CHECKMARK,
+                task.name(),
+                i + 1,
+                tasks.len()
+            )
+            .dark_green()
+        );
         println!("=================================================");
     }
 
-    println!("🚀🚀🚀✔️ All tasks have been completed! ✔️🚀🚀🚀");
+    println!(
+        "{}",
+        "🚀🚀🚀✔️ All tasks have been completed! ✔️🚀🚀🚀".dark_green()
+    );
     Ok(true)
+}
+
+pub trait Solved {
+    fn solved(self) -> AocSolution;
+}
+
+impl<I> Solved for I
+where
+    I: IntoIterator,
+    I::Item: Display,
+{
+    fn solved(self) -> AocSolution {
+        self.into_iter()
+            .map(|element| element.to_string())
+            .collect()
+    }
 }
