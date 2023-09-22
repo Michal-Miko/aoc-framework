@@ -11,7 +11,7 @@ use crate::error::AocError;
 
 pub type AocSolution = Vec<String>;
 pub type AocIO = Lines<BufReader<File>>;
-pub type AocInput = Lines<BufReader<File>>;
+pub type AocInput = AocIO;
 
 #[derive(Debug)]
 pub struct AocTestResult {

@@ -1,10 +1,10 @@
 pub mod error;
 mod task;
+pub mod traits;
 
 use crossterm::style::Stylize;
 use itertools::Itertools;
 use prettydiff::diff_chars;
-use std::{error::Error, fmt::Display};
 
 use error::AocError;
 pub use task::{AocIO, AocInput, AocSolution, AocTask};
@@ -106,31 +106,4 @@ pub fn check_solved_tasks(
         "🚀🚀🚀✔️ All tasks have been completed! ✔️🚀🚀🚀".dark_green()
     );
     Ok(true)
-}
-
-pub trait Solved {
-    fn solved(self) -> Result<AocSolution, Box<dyn Error + Sync + Send>>;
-}
-
-impl<I> Solved for I
-where
-    I: IntoIterator,
-    I::Item: Display,
-{
-    fn solved(self) -> Result<AocSolution, Box<dyn Error + Sync + Send>> {
-        Ok(self
-            .into_iter()
-            .map(|element| element.to_string())
-            .collect())
-    }
-}
-
-pub trait UnitSolved {
-    fn solved(self) -> Result<AocSolution, Box<dyn Error + Sync + Send>>;
-}
-
-impl<I: Display> UnitSolved for I {
-    fn solved(self) -> Result<AocSolution, Box<dyn Error + Sync + Send>> {
-        Ok(vec![self.to_string()])
-    }
 }
