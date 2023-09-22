@@ -4,7 +4,7 @@ mod task;
 use crossterm::style::Stylize;
 use itertools::Itertools;
 use prettydiff::diff_chars;
-use std::fmt::Display;
+use std::{error::Error, fmt::Display};
 
 use error::AocError;
 pub use task::{AocIO, AocInput, AocSolution, AocTask};
@@ -109,7 +109,7 @@ pub fn check_solved_tasks(
 }
 
 pub trait Solved {
-    fn solved(self) -> AocSolution;
+    fn solved(self) -> Result<AocSolution, Box<dyn Error + Sync + Send>>;
 }
 
 impl<I> Solved for I
@@ -117,9 +117,10 @@ where
     I: IntoIterator,
     I::Item: Display,
 {
-    fn solved(self) -> AocSolution {
-        self.into_iter()
+    fn solved(self) -> Result<AocSolution, Box<dyn Error + Sync + Send>> {
+        Ok(self
+            .into_iter()
             .map(|element| element.to_string())
-            .collect()
+            .collect())
     }
 }
