@@ -124,3 +124,13 @@ where
             .collect())
     }
 }
+
+pub trait UnitSolved {
+    fn solved(self) -> Result<AocSolution, Box<dyn Error + Sync + Send>>;
+}
+
+impl<I: Display> UnitSolved for I {
+    fn solved(self) -> Result<AocSolution, Box<dyn Error + Sync + Send>> {
+        Ok(vec![self.to_string()])
+    }
+}
