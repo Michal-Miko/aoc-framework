@@ -7,7 +7,7 @@ use itertools::Itertools;
 use prettydiff::diff_chars;
 
 use error::AocError;
-pub use task::{AocIO, AocInput, AocSolution, AocTask};
+pub use task::{AocSolution, AocStringIter, AocTask};
 
 pub type BoxedAocTask = Box<dyn AocTask>;
 

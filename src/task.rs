@@ -6,12 +6,13 @@ use std::{
 };
 
 use dialoguer::{theme::ColorfulTheme, Confirm};
+use itertools::{Itertools, ProcessResults};
 
 use crate::error::AocError;
 
 pub type AocSolution = Vec<String>;
-pub type AocIO = Lines<BufReader<File>>;
-pub type AocInput = AocIO;
+pub type AocStringIter<'src> = ProcessResults<'src, Lines<BufReader<File>>, std::io::Error>;
+pub type AocResultStringIter = Lines<BufReader<File>>;
 
 #[derive(Debug)]
 pub struct AocTestResult {
@@ -78,11 +79,11 @@ pub trait AocTask {
 
     fn solution(
         &self,
-        input: AocInput,
+        input: AocStringIter,
         phase: usize,
     ) -> Result<AocSolution, Box<dyn Error + Send + Sync>>;
 
-    fn get_file_iterator(&self, path: PathBuf) -> Result<AocIO, AocError> {
+    fn get_file_iterator(&self, path: PathBuf) -> Result<AocResultStringIter, AocError> {
         let file = File::open(&path).map_err(|io_err| AocError::IOReadError {
             input_path: path.to_string_lossy().to_string(),
             source: io_err,
@@ -105,12 +106,18 @@ pub trait AocTask {
         phase: usize,
     ) -> Result<AocSolution, AocError> {
         let input = self.get_file_iterator(input_path.clone())?;
-        let output =
-            self.solution(input, phase)
-                .map_err(|err| AocError::SolutionExecutionError {
-                    input: input_path.to_string_lossy().to_string(),
-                    source: err,
-                })?;
+        let output = input
+            .process_results(|lines| {
+                self.solution(lines, phase)
+                    .map_err(|err| AocError::SolutionExecutionError {
+                        input: input_path.to_string_lossy().to_string(),
+                        source: err,
+                    })
+            })
+            .map_err(|line_read_error| AocError::IOReadError {
+                input_path: input_path.to_string_lossy().to_string(),
+                source: line_read_error,
+            })??;
         Ok(output)
     }
 
@@ -168,20 +175,17 @@ mod tests {
 
         fn solution(
             &self,
-            input: AocInput,
+            input: AocStringIter,
             _phase: usize,
         ) -> Result<AocSolution, Box<dyn Error + Send + Sync>> {
             let mut answers = vec![];
             for line in input {
-                if let Ok(string) = line {
-                    answers.push(
-                        string
-                            .split_whitespace()
-                            .map(|num| num.parse::<i32>().unwrap_or(0))
-                            .sum::<i32>()
-                            .to_string(),
-                    );
-                }
+                answers.push(
+                    line.split_whitespace()
+                        .map(|num| num.parse::<i32>().unwrap_or(0))
+                        .sum::<i32>()
+                        .to_string(),
+                );
             }
             Ok(answers)
         }
