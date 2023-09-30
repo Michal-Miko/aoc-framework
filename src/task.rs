@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     error::Error,
     fs::File,
     io::{BufRead, BufReader, Lines},
@@ -47,12 +48,48 @@ pub trait AocTask {
             .unwrap_or("Unknown Task".to_owned())
     }
 
-    fn example_input_path(&self) -> PathBuf {
-        self.directory().join("example_in")
-    }
+    fn example_paths(&self) -> Result<Vec<(PathBuf, PathBuf)>, AocError> {
+        let example_directory = self.directory();
+        let task_files = example_directory
+            .read_dir()
+            .map_err(|err| AocError::MissingExample {
+                directory: example_directory.to_string_lossy().to_string(),
+                source: err,
+            })?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|err| AocError::MissingExample {
+                directory: example_directory.to_string_lossy().to_string(),
+                source: err,
+            })?;
 
-    fn example_output_path(&self) -> PathBuf {
-        self.directory().join("example_out")
+        let example_files = task_files
+            .into_iter()
+            .filter(|file| file.file_name().to_string_lossy().contains("example"));
+
+        let mut example_inputs = HashMap::new();
+        let mut example_outputs = HashMap::new();
+
+        for file in example_files {
+            let filename = file.file_name().to_string_lossy().to_string();
+            if filename.ends_with("_in") {
+                example_inputs.insert(filename, file);
+            } else if filename.ends_with("_out") {
+                example_outputs.insert(filename, file);
+            }
+        }
+
+        let mut example_pairs = vec![];
+        for (input_filename, input_file) in example_inputs {
+            let mut output_filename = input_filename.clone();
+            output_filename.replace_range(output_filename.len() - 3.., "_out");
+            let output_path = example_directory.join(output_filename);
+
+            if output_path.is_file() && input_file.path().is_file() {
+                example_pairs.push((input_file.path().to_owned(), output_path));
+            }
+        }
+
+        Ok(example_pairs)
     }
 
     fn input_path(&self) -> PathBuf {
@@ -83,39 +120,39 @@ pub trait AocTask {
         phase: usize,
     ) -> Result<AocSolution, Box<dyn Error + Send + Sync>>;
 
-    fn get_file_iterator(&self, path: PathBuf) -> Result<AocResultStringIter, AocError> {
+    fn get_file_iterator(&self, path: &PathBuf) -> Result<AocResultStringIter, AocError> {
         let file = File::open(&path).map_err(|io_err| AocError::IOReadError {
-            input_path: path.to_string_lossy().to_string(),
+            path: path.to_string_lossy().to_string(),
             source: io_err,
         })?;
         Ok(BufReader::new(file).lines())
     }
 
-    fn get_example_output(&self) -> Result<AocSolution, AocError> {
-        self.get_file_iterator(self.example_output_path())?
+    fn get_file_output(&self, path: &PathBuf) -> Result<AocSolution, AocError> {
+        self.get_file_iterator(&path)?
             .collect::<Result<Vec<String>, std::io::Error>>()
             .map_err(|err| AocError::IOReadError {
-                input_path: self.example_output_path().to_string_lossy().to_string(),
+                path: path.to_string_lossy().to_string(),
                 source: err,
             })
     }
 
     fn solve_from_input_path(
         &self,
-        input_path: PathBuf,
+        input_path: &PathBuf,
         phase: usize,
     ) -> Result<AocSolution, AocError> {
-        let input = self.get_file_iterator(input_path.clone())?;
+        let input = self.get_file_iterator(input_path)?;
         let output = input
             .process_results(|lines| {
                 self.solution(lines, phase)
                     .map_err(|err| AocError::SolutionExecutionError {
-                        input: input_path.to_string_lossy().to_string(),
+                        input_path: input_path.to_string_lossy().to_string(),
                         source: err,
                     })
             })
             .map_err(|line_read_error| AocError::IOReadError {
-                input_path: input_path.to_string_lossy().to_string(),
+                path: input_path.to_string_lossy().to_string(),
                 source: line_read_error,
             })??;
         Ok(output)
@@ -123,7 +160,7 @@ pub trait AocTask {
 
     fn solve(&self, phase: usize) -> Result<AocSolution, AocError> {
         let input_path = self.input_path();
-        let output = self.solve_from_input_path(input_path, phase)?;
+        let output = self.solve_from_input_path(&input_path, phase)?;
         Ok(output)
     }
 
@@ -137,9 +174,13 @@ pub trait AocTask {
         matches == s1.len() && matches == s2.len()
     }
 
-    fn run_example_test(&self, phase: usize) -> Result<AocTestResult, AocError> {
-        let example_output = self.get_example_output()?;
-        let output = self.solve_from_input_path(self.example_input_path(), phase)?;
+    fn run_example_test(
+        &self,
+        io_pair: &(PathBuf, PathBuf),
+        phase: usize,
+    ) -> Result<AocTestResult, AocError> {
+        let example_output = self.get_file_output(&io_pair.1)?;
+        let output = self.solve_from_input_path(&io_pair.0, phase)?;
         Ok(AocTestResult {
             passed: self.solutions_match(&example_output, &output),
             output,
@@ -198,9 +239,13 @@ mod tests {
     }
 
     #[test]
-    fn sum_task_example_solution() {
+    fn sum_task_example_solutions() {
         let task = SumTask;
-        assert!(task.run_example_test(1).unwrap().passed)
+        let examples = task.example_paths().unwrap();
+        assert!(examples.len() > 1);
+        for example_path_pair in examples {
+            assert!(task.run_example_test(&example_path_pair, 1).unwrap().passed);
+        }
     }
 
     #[test]

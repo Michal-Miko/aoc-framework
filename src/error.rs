@@ -11,20 +11,19 @@ pub enum AocError {
         solved_path: String,
         source: std::io::Error,
     },
-    #[error("Failed to read the IO file: {input_path}")]
+    #[error("Failed to read the IO file: {path}")]
     IOReadError {
-        input_path: String,
+        path: String,
         source: std::io::Error,
     },
-    #[error("Your solution failed to pass the example test")]
-    InvalidExampleOutput {
-        input: String,
-        output: String,
-        expected_output: String,
+    #[error("Could not find any example inputs/outputs in the folder {directory}. Expected at least one pair of files that start with `example_` and end with `_in`/`_out`. Error: {source}")]
+    MissingExample {
+        directory: String,
+        source: std::io::Error,
     },
     #[error("Your solution returned an error: {source}")]
     SolutionExecutionError {
-        input: String,
+        input_path: String,
         source: Box<dyn Error + Send + Sync>,
     },
     #[error("Failed to get user input")]
