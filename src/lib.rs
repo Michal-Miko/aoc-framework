@@ -65,7 +65,7 @@ fn solve_example_phase(
     example: &(PathBuf, PathBuf),
     phase: usize,
 ) -> Result<bool, AocError> {
-    let example_result = task.run_example_test(&example, phase)?;
+    let example_result = task.run_example_test(example, phase)?;
     let example_name = example
         .0
         .file_name()
@@ -81,7 +81,7 @@ fn solve_example_phase(
             CROSS.dark_red(),
             task.name().bold(),
             "failed".dark_red(),
-            example_name.clone().bold(),
+            example_name.bold(),
             phase.to_string().dark_yellow(),
         );
         let result = example_result.output.clone().into_iter();

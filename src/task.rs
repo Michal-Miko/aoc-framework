@@ -121,7 +121,7 @@ pub trait AocTask {
     ) -> Result<AocSolution, Box<dyn Error + Send + Sync>>;
 
     fn get_file_iterator(&self, path: &PathBuf) -> Result<AocResultStringIter, AocError> {
-        let file = File::open(&path).map_err(|io_err| AocError::IOReadError {
+        let file = File::open(path).map_err(|io_err| AocError::IOReadError {
             path: path.to_string_lossy().to_string(),
             source: io_err,
         })?;
@@ -129,7 +129,7 @@ pub trait AocTask {
     }
 
     fn get_file_output(&self, path: &PathBuf) -> Result<AocSolution, AocError> {
-        self.get_file_iterator(&path)?
+        self.get_file_iterator(path)?
             .collect::<Result<Vec<String>, std::io::Error>>()
             .map_err(|err| AocError::IOReadError {
                 path: path.to_string_lossy().to_string(),
