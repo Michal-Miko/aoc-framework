@@ -67,19 +67,16 @@ pub trait AocTask {
             .filter(|file| file.file_name().to_string_lossy().contains("example"));
 
         let mut example_inputs = HashMap::new();
-        let mut example_outputs = HashMap::new();
-
         for file in example_files {
             let filename = file.file_name().to_string_lossy().to_string();
             if filename.ends_with("_in") {
                 example_inputs.insert(filename, file);
-            } else if filename.ends_with("_out") {
-                example_outputs.insert(filename, file);
             }
         }
+        let sorted_inputs = example_inputs.iter().sorted_by(|a, b| a.0.cmp(b.0));
 
         let mut example_pairs = vec![];
-        for (input_filename, input_file) in example_inputs {
+        for (input_filename, input_file) in sorted_inputs {
             let mut output_filename = input_filename.clone();
             output_filename.replace_range(output_filename.len() - 3.., "_out");
             let output_path = example_directory.join(output_filename);

@@ -110,7 +110,7 @@ fn solve_example_phase(
     }
 
     println!(
-        "{} {} {} {} {}\n{}",
+        "{} {} {} {} {}:\n{}",
         DOT.cyan(),
         "Output of the".cyan(),
         example_name.bold(),
