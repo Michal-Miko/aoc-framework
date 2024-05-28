@@ -27,5 +27,5 @@ pub enum AocError {
         source: Box<dyn Error + Send + Sync>,
     },
     #[error("Failed to get user input")]
-    UserInterractionError { source: std::io::Error },
+    UserInterractionError { source: dialoguer::Error },
 }
