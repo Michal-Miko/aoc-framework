@@ -189,7 +189,7 @@ pub trait AocTask {
         let solved = Confirm::with_theme(&ColorfulTheme::default())
             .with_prompt(format!("Is phase {phase} of the task solved?"))
             .interact()
-            .map_err(|io_err| AocError::UserInterractionError { source: io_err })?;
+            .map_err(|dialog_err| AocError::UserInterractionError { source: dialog_err })?;
 
         if solved {
             self.mark_phase_as_solved(phase)?;
